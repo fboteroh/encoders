@@ -1,0 +1,1989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador Interactivo de Encoders Rotativos | MC4012 - Universidad EAFIT</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fuente Inter y JetBrains Mono para datos técnicos -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome para iconos técnicos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        eafit: {
+                            navy: '#002855',
+                            blue: '#004B87',
+                            gold: '#FDB913',
+                            light: '#F0F4F8',
+                            slate: '#334155'
+                        },
+                        signal: {
+                            cyan: '#06b6d4',
+                            amber: '#f59e0b',
+                            emerald: '#10b981',
+                            rose: '#f43f5e'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #f1f5f9;
+            color: #1e293b;
+            overflow-x: hidden;
+        }
+        /* Estilos personalizados para deslizadores técnicos */
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            background: transparent;
+            cursor: pointer;
+        }
+        input[type="range"]::-webkit-slider-runnable-track {
+            height: 6px;
+            border-radius: 3px;
+            background: #cbd5e1;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            margin-top: -6px;
+            background-color: #002855;
+            height: 18px;
+            width: 18px;
+            border-radius: 50%;
+            border: 2px solid #ffffff;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+            transition: transform 0.1s ease;
+        }
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background-color: #004B87;
+        }
+        .canvas-container {
+            position: relative;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .led-glow-cyan {
+            box-shadow: 0 0 10px #06b6d4, 0 0 20px rgba(6, 182, 212, 0.4);
+        }
+        .led-glow-amber {
+            box-shadow: 0 0 10px #f59e0b, 0 0 20px rgba(245, 158, 11, 0.4);
+        }
+        .led-glow-emerald {
+            box-shadow: 0 0 10px #10b981, 0 0 20px rgba(16, 185, 129, 0.4);
+        }
+        .led-glow-rose {
+            box-shadow: 0 0 12px #f43f5e, 0 0 24px rgba(244, 63, 94, 0.6);
+        }
+        .tab-active {
+            border-bottom: 3px solid #FDB913;
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .tab-inactive {
+            border-bottom: 3px solid transparent;
+            color: #cbd5e1;
+        }
+        .tab-inactive:hover {
+            color: #ffffff;
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased">
+
+    <!-- ENCABEZADO ACADÉMICO UNIVERSIDAD EAFIT -->
+    <header class="bg-eafit-navy text-white shadow-lg sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between py-3.5 border-b border-blue-900/80 gap-2">
+                <div class="flex items-center space-x-3.5">
+                    <!-- Emblema Técnico -->
+                    <div class="w-11 h-11 rounded-lg bg-white/10 border border-white/20 flex items-center justify-center flex-shrink-0">
+                        <i class="fa-solid fa-gear fa-spin text-eafit-gold text-xl" style="--fa-animation-duration: 12s;"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <h1 class="text-lg sm:text-xl font-bold tracking-tight text-white">Simulador Interactivo de Encoders Rotativos</h1>
+                            <span class="hidden sm:inline-block px-2 py-0.5 text-[11px] font-semibold bg-eafit-gold text-eafit-navy rounded uppercase tracking-wider">Lab Virtual</span>
+                        </div>
+                        <p class="text-xs sm:text-sm text-blue-200 font-medium">
+                            MC4012 – Sensores y Actuadores | Ingeniería Mecánica – <span class="text-white font-semibold">Universidad EAFIT</span>
+                        </p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 self-start md:self-center">
+                    <button onclick="toggleTheoryModal()" class="px-3 py-1.5 rounded-lg bg-blue-800/70 hover:bg-blue-700 text-xs font-medium text-blue-100 border border-blue-600/50 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-book-open text-eafit-gold"></i>
+                        <span>Fundamentos Teóricos</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- NAVEGACIÓN POR MÓDULOS -->
+            <nav class="flex overflow-x-auto no-scrollbar -mb-px space-x-1 sm:space-x-2" aria-label="Módulos del Simulador">
+                <button id="tab-btn-1" onclick="switchTab(1)" class="tab-active px-3.5 py-3 text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 rounded-t-md">
+                    <i class="fa-solid fa-wave-square text-cyan-400"></i>
+                    <span>1. Encoder Incremental (A, B, Z)</span>
+                </button>
+                <button id="tab-btn-2" onclick="switchTab(2)" class="tab-inactive px-3.5 py-3 text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 rounded-t-md">
+                    <i class="fa-solid fa-barcode text-amber-400"></i>
+                    <span>2. Encoder Absoluto (Binario vs. Gray)</span>
+                </button>
+                <button id="tab-btn-3" onclick="switchTab(3)" class="tab-inactive px-3.5 py-3 text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 rounded-t-md">
+                    <i class="fa-solid fa-scale-balanced text-emerald-400"></i>
+                    <span>3. Comparativa y Cálculo DAQ</span>
+                </button>
+                <button id="tab-btn-4" onclick="switchTab(4)" class="tab-inactive px-3.5 py-3 text-xs sm:text-sm font-semibold whitespace-nowrap transition flex items-center gap-2 rounded-t-md">
+                    <i class="fa-solid fa-flask-vial text-eafit-gold"></i>
+                    <span>4. Retos de Laboratorio</span>
+                    <span id="lab-score-badge" class="ml-1 px-1.5 py-0.5 text-[10px] font-mono bg-blue-900 text-eafit-gold rounded-full border border-blue-700">0/5</span>
+                </button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- CONTENIDO PRINCIPAL -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+
+        <!-- ===================================================================== -->
+        <!-- MÓDULO 1: ENCODER INCREMENTAL (CUADRATURA A, B, Z)                    -->
+        <!-- ===================================================================== -->
+        <section id="module-1" class="space-y-6">
+            <!-- Banner Pedagógico Introductorio -->
+            <div class="bg-white border-l-4 border-eafit-navy rounded-xl shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-eafit-navy flex items-center gap-2">
+                        <i class="fa-solid fa-circle-info text-cyan-600"></i>
+                        Principio de Operación: Codificación Incremental en Cuadratura
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                        Un encoder incremental genera trenes de pulsos digitales mediante un disco ranurado óptico. Los canales <strong>A</strong> y <strong>B</strong> están desfasados <strong>90° eléctricos</strong> (1/4 de paso de ranura) para determinar el <strong>sentido de giro</strong> (CW vs. CCW) y multiplicar la resolución (X1, X2, X4). El canal <strong>Z</strong> (Índice) emite 1 pulso por revolución como referencia mecánica (<em>Homing</em>).
+                    </p>
+                </div>
+                <div class="flex-shrink-0 bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-xs font-mono text-slate-700">
+                    <div>CW: <span class="text-cyan-700 font-bold">A adelanta a B</span> (90°)</div>
+                    <div>CCW: <span class="text-amber-600 font-bold">B adelanta a A</span> (90°)</div>
+                </div>
+            </div>
+
+            <!-- Grid Principal Módulo 1 -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Columna Izquierda: Disco Físico Interactivo y Controles de Eje (5 cols) -->
+                <div class="lg:col-span-5 bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between mb-3">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-eafit-navy">1. Disco Ranurado y Sensores Ópticos</h3>
+                            <span class="text-xs font-mono bg-slate-100 text-slate-600 px-2 py-1 rounded border border-slate-200">Arrastra el disco</span>
+                        </div>
+                        
+                        <!-- Canvas Disco Incremental -->
+                        <div class="canvas-container bg-slate-900 rounded-xl p-3 border border-slate-800 shadow-inner my-2">
+                            <canvas id="incDiskCanvas" class="w-full max-w-[340px] aspect-square cursor-grab active:cursor-grabbing"></canvas>
+                        </div>
+
+                        <!-- Leyenda Sensores Ópticos -->
+                        <div class="grid grid-cols-3 gap-2 mt-3 text-center text-xs">
+                            <div class="bg-cyan-50 border border-cyan-200 rounded-lg p-2">
+                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-cyan-500 mr-1"></span>
+                                <span class="font-bold text-cyan-900">Canal A</span>
+                                <div class="text-[11px] text-cyan-700">Pista Externa</div>
+                            </div>
+                            <div class="bg-amber-50 border border-amber-200 rounded-lg p-2">
+                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-500 mr-1"></span>
+                                <span class="font-bold text-amber-900">Canal B</span>
+                                <div class="text-[11px] text-amber-700">Desfase 90° eléc.</div>
+                            </div>
+                            <div class="bg-emerald-50 border border-emerald-200 rounded-lg p-2">
+                                <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"></span>
+                                <span class="font-bold text-emerald-900">Canal Z</span>
+                                <div class="text-[11px] text-emerald-700">Índice (0° mec.)</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Controles Mecánicos y de Configuración -->
+                    <div class="mt-5 pt-4 border-t border-slate-200 space-y-4">
+                        <!-- Control de Ángulo Manual -->
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                                <span>Posición Angular Mecánica Real ($\theta_{real}$):</span>
+                                <span id="inc-angle-label" class="font-mono text-eafit-navy font-bold">0.0°</span>
+                            </div>
+                            <input type="range" id="inc-angle-slider" min="0" max="360" step="0.2" value="0" class="w-full">
+                            <div class="grid grid-cols-4 gap-1.5 mt-2">
+                                <button onclick="stepIncrementalAngle(-5)" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-mono font-semibold border border-slate-300 transition">-5°</button>
+                                <button onclick="stepIncrementalAngle(-0.5)" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-mono font-semibold border border-slate-300 transition">-0.5°</button>
+                                <button onclick="stepIncrementalAngle(0.5)" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-mono font-semibold border border-slate-300 transition">+0.5°</button>
+                                <button onclick="stepIncrementalAngle(5)" class="py-1.5 px-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-mono font-semibold border border-slate-300 transition">+5°</button>
+                            </div>
+                        </div>
+
+                        <!-- Motor Continuo (RPM) -->
+                        <div class="bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <div class="flex justify-between items-center text-xs font-semibold text-slate-700 mb-1.5">
+                                <span>Accionamiento Motorizado (RPM):</span>
+                                <span id="inc-rpm-label" class="font-mono px-2 py-0.5 rounded bg-slate-200 text-slate-800">0 RPM (Detenido)</span>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <input type="range" id="inc-rpm-slider" min="-30" max="30" step="1" value="0" class="flex-grow">
+                                <button onclick="setIncrementalRPM(0)" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white text-xs font-semibold rounded shadow-sm transition">
+                                    <i class="fa-solid fa-stop mr-1"></i>Stop
+                                </button>
+                            </div>
+                            <div class="flex justify-between text-[10px] text-slate-500 font-mono mt-1">
+                                <span>-30 RPM (CCW)</span>
+                                <span>0</span>
+                                <span>+30 RPM (CW)</span>
+                            </div>
+                        </div>
+
+                        <!-- Parámetros del Encoder: PPR y Decodificación X1/X2/X4 -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Resolución Disco (PPR):</label>
+                                <select id="inc-ppr-select" onchange="updateIncrementalConfig()" class="w-full rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-mono font-semibold text-slate-800 focus:outline-none focus:border-eafit-navy">
+                                    <option value="8">8 PPR (45.0°/pulso)</option>
+                                    <option value="12" selected>12 PPR (30.0°/pulso)</option>
+                                    <option value="16">16 PPR (22.5°/pulso)</option>
+                                    <option value="24">24 PPR (15.0°/pulso)</option>
+                                    <option value="36">36 PPR (10.0°/pulso)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-slate-700 mb-1">Decodificación Cuadratura:</label>
+                                <div class="grid grid-cols-3 gap-1 bg-slate-200 p-1 rounded-lg">
+                                    <button id="quad-x1" onclick="setQuadMode(1)" class="py-1 text-xs font-mono font-bold rounded transition bg-white text-eafit-navy shadow-sm">X1</button>
+                                    <button id="quad-x2" onclick="setQuadMode(2)" class="py-1 text-xs font-mono font-bold rounded transition text-slate-600 hover:text-slate-900">X2</button>
+                                    <button id="quad-x4" onclick="setQuadMode(4)" class="py-1 text-xs font-mono font-bold rounded transition text-slate-600 hover:text-slate-900">X4</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Osciloscopio Digital y Panel PLC/DAQ (7 cols) -->
+                <div class="lg:col-span-7 flex flex-col gap-6">
+                    
+                    <!-- Osciloscopio de Tiempos / Posición -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <div>
+                                <h3 class="text-sm font-bold uppercase tracking-wider text-eafit-navy">2. Diagrama de Tiempos / Osciloscopio (0V – 5V TTL)</h3>
+                                <p class="text-xs text-slate-500">Los puntos resaltados indican los flancos activos que incrementan/decrementan el contador en modo <span id="osc-mode-text" class="font-bold text-eafit-navy">X1</span>.</p>
+                            </div>
+                            <button onclick="clearOscilloscope()" class="px-2.5 py-1 text-xs font-medium bg-slate-100 hover:bg-slate-200 text-slate-700 rounded border border-slate-300 transition">
+                                <i class="fa-solid fa-eraser mr-1"></i>Limpiar Trazo
+                            </button>
+                        </div>
+
+                        <div class="bg-slate-950 rounded-xl p-3 border border-slate-800 shadow-inner">
+                            <canvas id="incScopeCanvas" class="w-full h-[250px]"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Panel de Decodificación en Tiempo Real (Tarjeta Contadora PLC) -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-4">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-eafit-navy">3. Módulo Contador de Alta Velocidad (PLC / DAQ)</h3>
+                            <button onclick="resetIncrementalCounter()" class="px-3 py-1.5 bg-eafit-navy hover:bg-eafit-blue text-white text-xs font-semibold rounded-lg shadow-sm transition flex items-center gap-1.5">
+                                <i class="fa-solid fa-rotate-left text-eafit-gold"></i>
+                                <span>Reiniciar Contador (Homing)</span>
+                            </button>
+                        </div>
+
+                        <!-- Estados Lógicos Actuales -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+                                <div>
+                                    <div class="text-[11px] font-semibold text-slate-500 uppercase">Canal A</div>
+                                    <div id="state-a-val" class="text-lg font-mono font-bold text-slate-800">0 (0V)</div>
+                                </div>
+                                <div id="led-a" class="w-4 h-4 rounded-full bg-slate-300 border border-slate-400 transition-all"></div>
+                            </div>
+
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+                                <div>
+                                    <div class="text-[11px] font-semibold text-slate-500 uppercase">Canal B</div>
+                                    <div id="state-b-val" class="text-lg font-mono font-bold text-slate-800">0 (0V)</div>
+                                </div>
+                                <div id="led-b" class="w-4 h-4 rounded-full bg-slate-300 border border-slate-400 transition-all"></div>
+                            </div>
+
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3 flex items-center justify-between">
+                                <div>
+                                    <div class="text-[11px] font-semibold text-slate-500 uppercase">Índice Z</div>
+                                    <div id="state-z-val" class="text-lg font-mono font-bold text-slate-800">0 (0V)</div>
+                                </div>
+                                <div id="led-z" class="w-4 h-4 rounded-full bg-slate-300 border border-slate-400 transition-all"></div>
+                            </div>
+
+                            <div class="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                <div class="text-[11px] font-semibold text-slate-500 uppercase">Estado (AB)</div>
+                                <div id="quad-state-word" class="text-lg font-mono font-bold text-eafit-navy">00</div>
+                            </div>
+                        </div>
+
+                        <!-- Métricas Calculadas -->
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-eafit-light/70 p-3.5 rounded-xl border border-blue-100">
+                            <div>
+                                <div class="text-[11px] font-semibold text-slate-500">Sentido Detectado</div>
+                                <div id="inc-dir-display" class="text-sm font-bold text-slate-700 mt-0.5 flex items-center gap-1">
+                                    <i class="fa-solid fa-minus text-slate-400"></i> Sin movimiento
+                                </div>
+                            </div>
+                            <div>
+                                <div class="text-[11px] font-semibold text-slate-500">Cuentas Acumuladas</div>
+                                <div id="inc-counts-display" class="text-xl font-mono font-extrabold text-eafit-navy">0</div>
+                            </div>
+                            <div>
+                                <div class="text-[11px] font-semibold text-slate-500">Ángulo Medido ($\theta_{med}$)</div>
+                                <div id="inc-meas-angle-display" class="text-xl font-mono font-extrabold text-cyan-700">0.00°</div>
+                            </div>
+                            <div>
+                                <div class="text-[11px] font-semibold text-slate-500">Resolución ($\Delta\theta$)</div>
+                                <div id="inc-res-display" class="text-sm font-mono font-bold text-slate-800 mt-0.5">30.00° / cuenta</div>
+                                <div id="inc-cpr-display" class="text-[10px] font-mono text-slate-500">12 CPR efectivas</div>
+                            </div>
+                        </div>
+
+                        <!-- Ecuación Didáctica Dinámica -->
+                        <div class="mt-3 px-3 py-2 bg-slate-800 text-slate-200 rounded-lg font-mono text-xs flex flex-wrap items-center justify-between gap-2">
+                            <span>$\theta_{med} = \frac{\text{Cuentas}}{\text{PPR} \times \text{Modo}} \times 360^\circ$</span>
+                            <span id="inc-formula-live" class="text-eafit-gold font-semibold">= (0 / (12 × 1)) × 360° = 0.00°</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- MÓDULO 2: ENCODER ABSOLUTO (BINARIO NATURAL VS. CÓDIGO GRAY)          -->
+        <!-- ===================================================================== -->
+        <section id="module-2" class="hidden space-y-6">
+            <!-- Banner Pedagógico Introductorio -->
+            <div class="bg-white border-l-4 border-amber-500 rounded-xl shadow-sm p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-base font-bold text-eafit-navy flex items-center gap-2">
+                        <i class="fa-solid fa-microchip text-amber-500"></i>
+                        Encoder Absoluto: Palabra Digital Única y Prevención de Errores con Código Gray
+                    </h2>
+                    <p class="text-xs sm:text-sm text-slate-600 mt-1 leading-relaxed">
+                        A diferencia del incremental, un encoder absoluto posee $n$ pistas concéntricas que entregan una <strong>palabra binaria única de $n$ bits</strong> para cada posición angular ($2^n$ sectores), conservando la posición incluso tras un corte de energía. Activa la <strong>Desalineación Óptica</strong> cerca de una frontera (ej. sector 7 a 8) para comprobar por qué la industria utiliza <strong>Código Gray</strong> en lugar de Binario Natural.
+                    </p>
+                </div>
+                <div class="flex-shrink-0 bg-amber-50 border border-amber-200 rounded-lg px-3.5 py-2 text-xs text-amber-900">
+                    <div class="font-bold">Regla de Código Gray:</div>
+                    <div>Entre dos sectores adyacentes solo cambia <strong>1 bit</strong> a la vez (Distancia de Hamming = 1).</div>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                <!-- Columna Izquierda: Disco Codificado Concéntrico (6 cols) -->
+                <div class="lg:col-span-6 bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex flex-col justify-between">
+                    <div>
+                        <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-eafit-navy">1. Disco Óptico Concéntrico (<span id="abs-sectors-title">16 Sectores</span>)</h3>
+                            <div class="flex items-center gap-1.5">
+                                <span class="text-xs text-slate-500 font-medium">Pistas ($n$):</span>
+                                <button onclick="setAbsoluteBits(3)" id="abs-bit-3" class="px-2.5 py-1 text-xs font-mono font-bold rounded bg-slate-100 text-slate-700 border border-slate-300">3 bits</button>
+                                <button onclick="setAbsoluteBits(4)" id="abs-bit-4" class="px-2.5 py-1 text-xs font-mono font-bold rounded bg-eafit-navy text-white border border-eafit-navy">4 bits</button>
+                                <button onclick="setAbsoluteBits(5)" id="abs-bit-5" class="px-2.5 py-1 text-xs font-mono font-bold rounded bg-slate-100 text-slate-700 border border-slate-300">5 bits</button>
+                            </div>
+                        </div>
+
+                        <!-- Selector de Codificación: Binario vs Gray -->
+                        <div class="grid grid-cols-2 gap-2 p-1.5 bg-slate-100 rounded-xl border border-slate-200 mb-3">
+                            <button id="enc-type-binary" onclick="setAbsoluteEncoding('binary')" class="py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900">
+                                <i class="fa-solid fa-triangle-exclamation text-rose-500"></i>
+                                <span>Binario Natural</span>
+                            </button>
+                            <button id="enc-type-gray" onclick="setAbsoluteEncoding('gray')" class="py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 bg-white text-eafit-navy shadow-sm">
+                                <i class="fa-solid fa-shield-halved text-emerald-600"></i>
+                                <span>Código Gray (Reflejado)</span>
+                            </button>
+                        </div>
+
+                        <!-- Canvas Disco Absoluto -->
+                        <div class="canvas-container bg-slate-900 rounded-xl p-3 border border-slate-800 shadow-inner">
+                            <canvas id="absDiskCanvas" class="w-full max-w-[360px] aspect-square cursor-grab active:cursor-grabbing"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Controles de Ángulo y Simulador de Falla Mecánica -->
+                    <div class="mt-4 pt-4 border-t border-slate-200 space-y-3">
+                        <div>
+                            <div class="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                                <span>Ángulo Mecánico Real del Eje:</span>
+                                <span id="abs-angle-label" class="font-mono text-eafit-navy font-bold">178.0°</span>
+                            </div>
+                            <input type="range" id="abs-angle-slider" min="0" max="359.9" step="0.1" value="178.0" class="w-full">
+                            <div class="flex flex-wrap gap-1.5 mt-2">
+                                <button onclick="jumpToCriticalTransition()" class="flex-grow py-1.5 px-2.5 bg-amber-100 hover:bg-amber-200 text-amber-900 border border-amber-300 rounded-lg text-xs font-semibold transition flex items-center justify-center gap-1.5">
+                                    <i class="fa-solid fa-crosshairs"></i>
+                                    <span>Ir a Frontera Crítica (Cambio de todos los bits)</span>
+                                </button>
+                                <button onclick="stepAbsoluteAngle(-0.2)" class="py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-mono font-bold border border-slate-300">-0.2°</button>
+                                <button onclick="stepAbsoluteAngle(0.2)" class="py-1.5 px-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-mono font-bold border border-slate-300">+0.2°</button>
+                            </div>
+                        </div>
+
+                        <!-- Interruptor de Desalineación Óptica -->
+                        <div class="bg-rose-50/80 border border-rose-200 rounded-xl p-3 flex items-center justify-between gap-3">
+                            <div>
+                                <div class="text-xs font-bold text-rose-900 flex items-center gap-1.5">
+                                    <i class="fa-solid fa-wrench text-rose-600"></i>
+                                    <span>Simular Desalineación Óptica / Tolerancia de Montaje</span>
+                                </div>
+                                <p class="text-[11px] text-rose-700 mt-0.5">
+                                    Introduce un desfase de ±1.2° entre fotodetectores radiales (realista en manufactura).
+                                </p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer flex-shrink-0">
+                                <input type="checkbox" id="abs-misalign-toggle" onchange="updateAbsoluteSimulation()" class="sr-only peer" checked>
+                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-rose-600"></div>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Columna Derecha: Lectura de Bits, Decodificación y Análisis de Error (6 cols) -->
+                <div class="lg:col-span-6 flex flex-col gap-6">
+                    
+                    <!-- Banco de Fotodetectores Radiales -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
+                        <h3 class="text-sm font-bold uppercase tracking-wider text-eafit-navy mb-3">2. Arreglo Lineal de Fotodetectores (MSB $\rightarrow$ LSB)</h3>
+                        
+                        <div id="abs-sensors-bank" class="grid grid-cols-4 gap-2.5 mb-4">
+                            <!-- Generado dinámicamente por JS según n bits -->
+                        </div>
+
+                        <!-- Palabra Leída vs Valor Real -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-900 text-white p-4 rounded-xl">
+                            <div>
+                                <div class="text-[11px] uppercase tracking-wider text-slate-400">Palabra Cruda Leída (<span id="abs-word-type-label">Gray</span>)</div>
+                                <div id="abs-raw-word" class="text-2xl font-mono font-bold text-amber-400 tracking-widest mt-1">1100</div>
+                            </div>
+                            <div>
+                                <div class="text-[11px] uppercase tracking-wider text-slate-400">Sector Decodificado (Decimal)</div>
+                                <div class="flex items-baseline gap-2 mt-1">
+                                    <span id="abs-decoded-sector" class="text-2xl font-mono font-bold text-cyan-400">8</span>
+                                    <span id="abs-expected-sector" class="text-xs font-mono text-slate-400">(Sector real: 8)</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Alerta / Diagnóstico de Glitch -->
+                        <div id="abs-glitch-alert" class="mt-4 p-3.5 rounded-xl border transition-all bg-emerald-50 border-emerald-200 text-emerald-900">
+                            <div class="flex items-start gap-2.5">
+                                <i id="abs-glitch-icon" class="fa-solid fa-circle-check text-emerald-600 text-base mt-0.5"></i>
+                                <div class="text-xs">
+                                    <div id="abs-glitch-title" class="font-bold">Lectura Válida y Consistente</div>
+                                    <div id="abs-glitch-desc" class="mt-0.5 leading-relaxed">El sector decodificado coincide con la posición física del eje dentro de la resolución de 1 LSB.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Comparativa Angular y Tabla de Verdad Interactiva -->
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 flex-grow flex flex-col justify-between">
+                        <div>
+                            <h3 class="text-sm font-bold uppercase tracking-wider text-eafit-navy mb-3">3. Medición Angular y Tabla de Codificación</h3>
+                            <div class="grid grid-cols-3 gap-2.5 mb-4 text-center">
+                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                                    <div class="text-[11px] text-slate-500 font-semibold">Ángulo Real</div>
+                                    <div id="abs-real-deg" class="text-base font-mono font-bold text-slate-800">178.0°</div>
+                                </div>
+                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                                    <div class="text-[11px] text-slate-500 font-semibold">Ángulo Medido</div>
+                                    <div id="abs-meas-deg" class="text-base font-mono font-bold text-eafit-navy">180.0°</div>
+                                </div>
+                                <div class="bg-slate-50 border border-slate-200 rounded-lg p-2.5">
+                                    <div class="text-[11px] text-slate-500 font-semibold">Error Instantáneo</div>
+                                    <div id="abs-error-deg" class="text-base font-mono font-bold text-emerald-600">2.0°</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tabla de referencia rápida de los sectores cercanos -->
+                        <div>
+                            <div class="text-xs font-semibold text-slate-600 mb-1.5 flex justify-between">
+                                <span>Tabla de Transición de Sectores (Vecindad Actual):</span>
+                                <span class="text-[11px] font-mono text-slate-400">Bits que cambian vs. anterior</span>
+                            </div>
+                            <div class="overflow-x-auto border border-slate-200 rounded-lg">
+                                <table class="w-full text-xs text-left font-mono">
+                                    <thead class="bg-slate-100 text-slate-600 border-b border-slate-200">
+                                        <tr>
+                                            <th class="py-1.5 px-2.5">Sector</th>
+                                            <th class="py-1.5 px-2.5">Rango Angular</th>
+                                            <th class="py-1.5 px-2.5">Binario</th>
+                                            <th class="py-1.5 px-2.5">Gray</th>
+                                            <th class="py-1.5 px-2.5">Δ Bits (Bin/Gray)</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="abs-truth-table-body" class="divide-y divide-slate-100">
+                                        <!-- Dinámico -->
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- MÓDULO 3: COMPARATIVA TÉCNICA Y CALCULADORA DE INGENIERÍA             -->
+        <!-- ===================================================================== -->
+        <section id="module-3" class="hidden space-y-6">
+            
+            <!-- Calculadora de Selección de Encoder y Tarjeta de Adquisición (DAQ / PLC) -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-5 sm:p-6">
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-2 pb-4 border-b border-slate-200">
+                    <div>
+                        <h2 class="text-base sm:text-lg font-bold text-eafit-navy flex items-center gap-2">
+                            <i class="fa-solid fa-calculator text-eafit-gold"></i>
+                            Calculadora de Diseño Mecatrónico: Resolución y Frecuencia Máxima (DAQ / PLC)
+                        </h2>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-0.5">
+                            Dimensiona un encoder incremental para un eje rotativo y verifica si tu tarjeta de adquisición o entrada rápida de PLC soporta la frecuencia de pulsos sin pérdida de cuentas (aliasing).
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 mt-5">
+                    <!-- Entradas de Diseño (5 cols) -->
+                    <div class="lg:col-span-5 space-y-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Resolución Nominal del Encoder (PPR):</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="calc-ppr" value="1024" min="1" max="100000" oninput="calculateEngineeringSpecs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono font-bold text-eafit-navy focus:outline-none focus:border-eafit-navy">
+                                <span class="text-xs font-mono text-slate-500">pulsos/rev</span>
+                            </div>
+                            <div class="flex gap-1.5 mt-1.5">
+                                <button onclick="setCalcPPR(360)" class="px-2 py-0.5 text-[11px] font-mono bg-white border border-slate-300 rounded hover:bg-slate-100">360</button>
+                                <button onclick="setCalcPPR(1000)" class="px-2 py-0.5 text-[11px] font-mono bg-white border border-slate-300 rounded hover:bg-slate-100">1000</button>
+                                <button onclick="setCalcPPR(1024)" class="px-2 py-0.5 text-[11px] font-mono bg-white border border-slate-300 rounded hover:bg-slate-100">1024</button>
+                                <button onclick="setCalcPPR(2500)" class="px-2 py-0.5 text-[11px] font-mono bg-white border border-slate-300 rounded hover:bg-slate-100">2500</button>
+                                <button onclick="setCalcPPR(5000)" class="px-2 py-0.5 text-[11px] font-mono bg-white border border-slate-300 rounded hover:bg-slate-100">5000</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Velocidad Máxima del Eje (RPM):</label>
+                            <div class="flex items-center gap-2">
+                                <input type="number" id="calc-rpm" value="3000" min="1" max="60000" oninput="calculateEngineeringSpecs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono font-bold text-eafit-navy focus:outline-none focus:border-eafit-navy">
+                                <span class="text-xs font-mono text-slate-500">rev/min</span>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Factor de Decodificación en Cuadratura:</label>
+                            <select id="calc-quad" onchange="calculateEngineeringSpecs()" class="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-mono font-semibold text-slate-800">
+                                <option value="1">X1 (1x PPR - Solo flanco subida A)</option>
+                                <option value="2">X2 (2x PPR - Flancos subida/bajada A)</option>
+                                <option value="4" selected>X4 (4x PPR - Todos los flancos A y B)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Frecuencia Máxima de Entrada del PLC / DAQ (kHz):</label>
+                            <input type="number" id="calc-daq-khz" value="100" min="1" max="5000" oninput="calculateEngineeringSpecs()" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm font-mono font-bold text-slate-800">
+                        </div>
+                    </div>
+
+                    <!-- Resultados de Ingeniería (7 cols) -->
+                    <div class="lg:col-span-7 flex flex-col justify-between space-y-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div class="bg-eafit-navy text-white p-4 rounded-xl shadow-sm">
+                                <div class="text-xs text-blue-200 font-medium">Cuentas Efectivas por Revolución (CPR)</div>
+                                <div id="res-calc-cpr" class="text-2xl font-mono font-extrabold text-eafit-gold mt-1">4,096 CPR</div>
+                                <div class="text-[11px] font-mono text-blue-200 mt-1">Equivalente a <span id="res-calc-bits">12.00</span> bits</div>
+                            </div>
+
+                            <div class="bg-eafit-blue text-white p-4 rounded-xl shadow-sm">
+                                <div class="text-xs text-blue-100 font-medium">Resolución Angular ($\Delta\theta$)</div>
+                                <div id="res-calc-deg" class="text-2xl font-mono font-extrabold text-white mt-1">0.0879°</div>
+                                <div id="res-calc-arcmin" class="text-[11px] font-mono text-cyan-300 mt-1">5.27 arcmin (316.4 arcsec)</div>
+                            </div>
+
+                            <div class="bg-slate-800 text-white p-4 rounded-xl shadow-sm">
+                                <div class="text-xs text-slate-300 font-medium">Frecuencia por Canal ($f_{canal}$)</div>
+                                <div id="res-calc-fchan" class="text-2xl font-mono font-extrabold text-cyan-400 mt-1">51.20 kHz</div>
+                                <div class="text-[11px] font-mono text-slate-400 mt-1">$f = (\text{RPM} \times \text{PPR}) / 60$</div>
+                            </div>
+
+                            <div class="bg-slate-800 text-white p-4 rounded-xl shadow-sm">
+                                <div class="text-xs text-slate-300 font-medium">Tasa de Conteo en Cuadratura ($f_{conteo}$)</div>
+                                <div id="res-calc-fcount" class="text-2xl font-mono font-extrabold text-amber-400 mt-1">204.80 kHz</div>
+                                <div class="text-[11px] font-mono text-slate-400 mt-1">$f_{conteo} = f_{canal} \times \text{Modo}$</div>
+                            </div>
+                        </div>
+
+                        <!-- Veredicto de Compatibilidad DAQ/PLC -->
+                        <div id="calc-verdict-box" class="p-4 rounded-xl border bg-rose-50 border-rose-300 text-rose-900">
+                            <div class="flex items-start gap-3">
+                                <i id="calc-verdict-icon" class="fa-solid fa-triangle-exclamation text-rose-600 text-lg mt-0.5"></i>
+                                <div class="text-xs sm:text-sm">
+                                    <div id="calc-verdict-title" class="font-bold">¡Alerta de Saturación en el Contador!</div>
+                                    <p id="calc-verdict-text" class="mt-1 leading-relaxed">
+                                        La tasa de conteo calculada (204.80 kHz) supera el límite de la tarjeta DAQ/PLC (100 kHz). Se perderán pulsos a máxima velocidad. Solución: reduce los PPR, usa decodificación X1/X2 o cambia a un módulo contador de alta velocidad (HSC ≥ 250 kHz).
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabla Comparativa Técnica -->
+            <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                <div class="p-5 border-b border-slate-200 bg-slate-50">
+                    <h3 class="text-base font-bold text-eafit-navy">Matriz Comparativa de Encoders en Ingeniería Mecánica</h3>
+                    <p class="text-xs text-slate-600 mt-0.5">Criterios de selección según requisitos de proceso, seguridad funcional y entorno industrial.</p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs sm:text-sm text-left">
+                        <thead class="bg-eafit-navy text-white uppercase text-xs">
+                            <tr>
+                                <th class="py-3.5 px-4">Criterio Técnico</th>
+                                <th class="py-3.5 px-4 border-l border-blue-800">Encoder Incremental</th>
+                                <th class="py-3.5 px-4 border-l border-blue-800">Encoder Absoluto Monovuelta</th>
+                                <th class="py-3.5 px-4 border-l border-blue-800">Encoder Absoluto Multivuelta</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-bold text-slate-800">Principio de Medición</td>
+                                <td class="py-3 px-4 border-l border-slate-100">Conteo relativo de pulsos en cuadratura (A, B) desde un punto de referencia (Z).</td>
+                                <td class="py-3 px-4 border-l border-slate-100">Lectura directa de palabra digital única (Código Gray) dentro de 0°–360°.</td>
+                                <td class="py-3 px-4 border-l border-slate-100">Disco principal + tren de engranajes internos o contador magnético Wiegand de vueltas.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-bold text-slate-800">Memoria tras Corte de Energía</td>
+                                <td class="py-3 px-4 border-l border-slate-100 text-rose-700 font-semibold">No. Pierde la posición; exige rutina de <em>Homing</em> al reiniciar la máquina.</td>
+                                <td class="py-3 px-4 border-l border-slate-100 text-emerald-700 font-semibold">Sí (dentro de 1 vuelta). Conoce el ángulo exacto al instante de encender.</td>
+                                <td class="py-3 px-4 border-l border-slate-100 text-emerald-700 font-semibold">Sí (posición angular + número exacto de revoluciones acumuladas, ej. 4096 vueltas).</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-bold text-slate-800">Interfaz Eléctrica / Protocolo</td>
+                                <td class="py-3 px-4 border-l border-slate-100 font-mono text-xs">TTL (5V), HTL/Push-Pull (24V), Diferencial RS-422 (A+/A-, B+/B-, Z+/Z-).</td>
+                                <td class="py-3 px-4 border-l border-slate-100 font-mono text-xs">Paralelo, SSI (Synchronous Serial Interface), BiSS-C, PROFINET, EtherCAT.</td>
+                                <td class="py-3 px-4 border-l border-slate-100 font-mono text-xs">SSI, BiSS-C, CANopen, Profibus-DP, PROFINET, EtherNet/IP.</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-bold text-slate-800">Inmunidad al Ruido (EMI)</td>
+                                <td class="py-3 px-4 border-l border-slate-100">Media (un pulso espurio altera el conteo permanentemente). Mejora con RS-422.</td>
+                                <td class="py-3 px-4 border-l border-slate-100">Alta. Cada ciclo de muestreo lee la posición completa; un error transitorio se corrige solo.</td>
+                                <td class="py-3 px-4 border-l border-slate-100">Muy Alta (incluye CRC de verificación de trama en protocolos BiSS-C / PROFINET).</td>
+                            </tr>
+                            <tr class="hover:bg-slate-50">
+                                <td class="py-3 px-4 font-bold text-slate-800">Aplicaciones Típicas en Ingeniería Mecánica</td>
+                                <td class="py-3 px-4 border-l border-slate-100">Control de velocidad de motores AC/DC, bandas transportadoras, husillos CNC con homing seguro, medición de caudal por turbina.</td>
+                                <td class="py-3 px-4 border-l border-slate-100">Mesas indexadoras rotativas, control de paso de álabes en turbinas eólicas/hidráulicas, válvulas rotativas.</td>
+                                <td class="py-3 px-4 border-l border-slate-100">Articulaciones de brazos robóticos industriales, grúas puente, compuertas de represas, actuadores lineales por husillo de bolas.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===================================================================== -->
+        <!-- MÓDULO 4: RETOS DE LABORATORIO (AUTOEVALUACIÓN INTERACTIVA)           -->
+        <!-- ===================================================================== -->
+        <section id="module-4" class="hidden space-y-6">
+            <div class="bg-eafit-navy text-white rounded-xl p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-lg font-bold flex items-center gap-2">
+                        <i class="fa-solid fa-graduation-cap text-eafit-gold"></i>
+                        Práctica de Laboratorio Evaluable – MC4012
+                    </h2>
+                    <p class="text-xs sm:text-sm text-blue-200 mt-1">
+                        Resuelve los 5 casos de ingeniería utilizando los simuladores de los módulos anteriores como instrumento de medición y verificación.
+                    </p>
+                </div>
+                <div class="bg-white/10 border border-white/20 rounded-xl px-4 py-2.5 text-center flex-shrink-0">
+                    <div class="text-[11px] uppercase tracking-wider text-blue-200">Progreso del Estudiante</div>
+                    <div id="lab-progress-text" class="text-2xl font-mono font-extrabold text-eafit-gold">0 / 5 Completados</div>
+                </div>
+            </div>
+
+            <div id="lab-challenges-container" class="space-y-4">
+                <!-- Las 5 tarjetas de retos se renderizan dinámicamente con JavaScript -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- MODAL DE FUNDAMENTOS TEÓRICOS -->
+    <div id="theory-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto shadow-2xl border border-slate-200">
+            <div class="bg-eafit-navy text-white px-6 py-4 flex items-center justify-between sticky top-0">
+                <h3 class="text-base font-bold flex items-center gap-2">
+                    <i class="fa-solid fa-book-open text-eafit-gold"></i>
+                    Notas Técnicas: Encoders Ópticos y Magnéticos
+                </h3>
+                <button onclick="toggleTheoryModal()" class="text-blue-200 hover:text-white text-lg">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-4 text-xs sm:text-sm text-slate-700 leading-relaxed">
+                <div>
+                    <h4 class="font-bold text-eafit-navy text-sm mb-1">1. Transmisión Diferencial RS-422 vs. Single-Ended</h4>
+                    <p>En ambientes industriales con variadores de frecuencia (VFD) y motores eléctricos, las señales de un solo hilo (TTL/HTL) sufren interferencia electromagnética. Los encoders industriales emplean drivers diferenciales <strong>RS-422</strong> con pares trenzados ($\text{A}+, \overline{\text{A}}-$; $\text{B}+, \overline{\text{B}}-$; $\text{Z}+, \overline{\text{Z}}-$). El receptor resta ambas señales, cancelando el ruido en modo común.</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-eafit-navy text-sm mb-1">2. Conversión de Binario Natural a Código Gray</h4>
+                    <p>Para convertir un número binario $B_{n-1}\dots B_1 B_0$ a Código Gray $G_{n-1}\dots G_1 G_0$ se aplica la operación lógica XOR ($\oplus$):</p>
+                    <div class="bg-slate-100 p-2.5 rounded-lg font-mono text-xs my-1.5 text-slate-800">
+                        G_MSB = B_MSB &nbsp;|&nbsp; G_i = B_{i+1} ⊕ B_i
+                    </div>
+                    <p>Por ejemplo, el número decimal 7 en binario es <code>0111</code>. En Gray es <code>0100</code>. El siguiente número, 8, en binario es <code>1000</code> (cambian 4 bits simultáneamente), mientras que en Gray es <code>1100</code> (solo cambia el bit más significativo).</p>
+                </div>
+                <div>
+                    <h4 class="font-bold text-eafit-navy text-sm mb-1">3. Limitaciones Mecánicas y Frecuencia Máxima</h4>
+                    <p>La frecuencia máxima de respuesta electrónica del encoder ($f_{max}$) limita la velocidad de giro admisible según la relación $\text{RPM}_{max} = \frac{f_{max} \times 60}{\text{PPR}}$. Superar este umbral provoca atenuación de los pulsos ópticos y pérdida de sincronismo.</p>
+                </div>
+            </div>
+            <div class="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <button onclick="toggleTheoryModal()" class="px-4 py-2 bg-eafit-navy text-white text-xs font-semibold rounded-lg hover:bg-eafit-blue transition">Entendido</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- PIE DE PÁGINA ACADÉMICO -->
+    <footer class="bg-white border-t border-slate-200 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-2">
+            <div>
+                <span class="font-semibold text-eafit-navy">Universidad EAFIT</span> – Departamento de Ingeniería Mecánica | Asignatura <strong>MC4012 – Sensores y Actuadores</strong>
+            </div>
+            <div class="font-mono text-[11px]">
+                Recurso Pedagógico Interactivo • Instrumentación y Control Industrial
+            </div>
+        </div>
+    </footer>
+
+    <!-- ===================================================================== -->
+    <!-- LÓGICA DE SIMULACIÓN, FÍSICA DE SENSORES Y GRÁFICOS CANVAS            -->
+    <!-- ===================================================================== -->
+    <script>
+        // =========================================================================
+        // ESTADO GLOBAL DEL SIMULADOR
+        // =========================================================================
+        const state = {
+            activeTab: 1,
+            // Estado Módulo 1: Encoder Incremental
+            inc: {
+                angle: 0.0,           // Ángulo mecánico real en grados [0, 360)
+                totalAngle: 0.0,      // Ángulo acumulado continuo para tracking
+                rpm: 0,               // Velocidad del motor (-30 a +30 RPM)
+                ppr: 12,              // Pulsos por revolución
+                quadMode: 1,          // 1 (X1), 2 (X2), 4 (X4)
+                counts: 0,            // Cuentas acumuladas en el PLC
+                direction: 0,         // 1 = CW, -1 = CCW, 0 = Detenido
+                A: 0,
+                B: 0,
+                Z: 0,
+                prevA: 0,
+                prevB: 0,
+                isDragging: false,
+                lastDragAngle: 0,
+                // Historial para el osciloscopio
+                history: []           // Array de { A, B, Z, edgeA, edgeB, counted }
+            },
+            // Estado Módulo 2: Encoder Absoluto
+            abs: {
+                bits: 4,              // 3, 4 o 5 bits
+                encoding: 'gray',     // 'binary' o 'gray'
+                angle: 178.0,         // Ángulo real [0, 360)
+                misalign: true,       // Simular tolerancia mecánica de sensores
+                isDragging: false
+            },
+            // Estado Módulo 4: Laboratorio
+            lab: {
+                solved: [false, false, false, false, false]
+            }
+        };
+
+        // Desfases angulares simulados (en grados) por pista cuando "Desalineación" está activa
+        const MISALIGNMENT_OFFSETS = [-1.15, 0.85, -0.70, 1.10, -0.95];
+
+        // =========================================================================
+        // NAVEGACIÓN ENTRE MÓDULOS Y UTILIDADES UI
+        // =========================================================================
+        function switchTab(tabNum) {
+            state.activeTab = tabNum;
+            for (let i = 1; i <= 4; i++) {
+                const mod = document.getElementById(`module-${i}`);
+                const btn = document.getElementById(`tab-btn-${i}`);
+                if (i === tabNum) {
+                    mod.classList.remove('hidden');
+                    btn.classList.remove('tab-inactive');
+                    btn.classList.add('tab-active');
+                } else {
+                    mod.classList.add('hidden');
+                    btn.classList.remove('tab-active');
+                    btn.classList.add('tab-inactive');
+                }
+            }
+            // Redimensionar y redibujar canvas al hacerse visibles
+            setTimeout(() => {
+                resizeAllCanvases();
+                drawIncrementalDisk();
+                drawIncrementalScope();
+                drawAbsoluteDisk();
+            }, 20);
+        }
+
+        function toggleTheoryModal() {
+            const modal = document.getElementById('theory-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        // =========================================================================
+        // MÓDULO 1: LÓGICA DEL ENCODER INCREMENTAL EN CUADRATURA (A, B, Z)
+        // =========================================================================
+        
+        /**
+         * Calcula el estado lógico (0 o 1) de los canales A, B y Z dado un ángulo mecánico
+         */
+        function evaluateIncrementalChannels(angleDeg, ppr) {
+            const normAngle = ((angleDeg % 360) + 360) % 360;
+            const pitch = 360 / ppr; // Paso angular de un ciclo completo (ranura + opaco)
+            
+            // Fase eléctrica en [0, 1) dentro de un paso de ranura
+            const phaseA = (normAngle % pitch) / pitch;
+            // Canal B atrasado 90° eléctricos (0.25 del paso) respecto a A en giro CW
+            const phaseB = (((normAngle - pitch * 0.25) % pitch + pitch) % pitch) / pitch;
+
+            const A = phaseA < 0.5 ? 1 : 0;
+            const B = phaseB < 0.5 ? 1 : 0;
+
+            // Canal Z: pulso índice estrecho alrededor de 0° (ancho de 1/4 de paso)
+            const zWidth = Math.min(pitch * 0.35, 8);
+            const Z = (normAngle < zWidth) ? 1 : 0;
+
+            return { A, B, Z };
+        }
+
+        /**
+         * Actualiza el ángulo incremental subdividiendo pasos grandes para no perder flancos
+         */
+        function setIncrementalAngle(newTotalAngle, recordHistory = true) {
+            const delta = newTotalAngle - state.inc.totalAngle;
+            if (Math.abs(delta) < 1e-6) return;
+
+            // Subdividir el movimiento en micro-pasos menores a 1/16 de pitch para evitar aliasing
+            const pitch = 360 / state.inc.ppr;
+            const maxStep = pitch / 16;
+            const steps = Math.max(1, Math.ceil(Math.abs(delta) / maxStep));
+            const stepDelta = delta / steps;
+
+            for (let s = 0; s < steps; s++) {
+                state.inc.totalAngle += stepDelta;
+                state.inc.angle = ((state.inc.totalAngle % 360) + 360) % 360;
+
+                const { A, B, Z } = evaluateIncrementalChannels(state.inc.angle, state.inc.ppr);
+                const prevA = state.inc.A;
+                const prevB = state.inc.B;
+
+                let edgeA = 0; // +1 subida, -1 bajada
+                let edgeB = 0;
+                let counted = 0;
+
+                if (A !== prevA) edgeA = (A === 1) ? 1 : -1;
+                if (B !== prevB) edgeB = (B === 1) ? 1 : -1;
+
+                // Máquina de estados de decodificación en cuadratura (X1, X2, X4)
+                if (edgeA !== 0 || edgeB !== 0) {
+                    // Determinar dirección física por transición de cuadratura
+                    // Tabla estándar CW: 00 -> 10 -> 11 -> 01 -> 00
+                    let stepDir = 0;
+                    if (edgeA === 1)  stepDir = (B === 0) ? 1 : -1;
+                    if (edgeA === -1) stepDir = (B === 1) ? 1 : -1;
+                    if (edgeB === 1)  stepDir = (A === 1) ? 1 : -1;
+                    if (edgeB === -1) stepDir = (A === 0) ? 1 : -1;
+
+                    if (stepDir !== 0) state.inc.direction = stepDir;
+
+                    // Aplicar regla según modo seleccionado (X1, X2, X4)
+                    if (state.inc.quadMode === 1) {
+                        // Solo flanco de subida de A
+                        if (edgeA === 1) counted = stepDir;
+                    } else if (state.inc.quadMode === 2) {
+                        // Flancos de subida y bajada de A
+                        if (edgeA !== 0) counted = stepDir;
+                    } else if (state.inc.quadMode === 4) {
+                        // Todos los flancos de A y B
+                        counted = stepDir;
+                    }
+
+                    state.inc.counts += counted;
+                }
+
+                state.inc.prevA = A;
+                state.inc.prevB = B;
+                state.inc.A = A;
+                state.inc.B = B;
+                state.inc.Z = Z;
+
+                // Registrar muestra en el buffer del osciloscopio
+                if (recordHistory && (s % Math.max(1, Math.floor(steps / 4)) === 0 || counted !== 0)) {
+                    state.inc.history.push({
+                        A, B, Z,
+                        edgeA, edgeB,
+                        counted
+                    });
+                    if (state.inc.history.length > 180) {
+                        state.inc.history.shift();
+                    }
+                }
+            }
+
+            updateIncrementalUI();
+            drawIncrementalDisk();
+            drawIncrementalScope();
+        }
+
+        function stepIncrementalAngle(deg) {
+            setIncrementalAngle(state.inc.totalAngle + deg, true);
+        }
+
+        function setIncrementalRPM(rpm) {
+            state.inc.rpm = parseFloat(rpm);
+            document.getElementById('inc-rpm-slider').value = state.inc.rpm;
+            const label = document.getElementById('inc-rpm-label');
+            if (state.inc.rpm === 0) {
+                label.textContent = '0 RPM (Detenido)';
+                label.className = 'font-mono px-2 py-0.5 rounded bg-slate-200 text-slate-800';
+                state.inc.direction = 0;
+                updateIncrementalUI();
+            } else if (state.inc.rpm > 0) {
+                label.textContent = `+${state.inc.rpm} RPM (CW)`;
+                label.className = 'font-mono px-2 py-0.5 rounded bg-cyan-100 text-cyan-900 font-bold';
+            } else {
+                label.textContent = `${state.inc.rpm} RPM (CCW)`;
+                label.className = 'font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-900 font-bold';
+            }
+        }
+
+        function updateIncrementalConfig() {
+            state.inc.ppr = parseInt(document.getElementById('inc-ppr-select').value, 10);
+            const { A, B, Z } = evaluateIncrementalChannels(state.inc.angle, state.inc.ppr);
+            state.inc.A = A;
+            state.inc.B = B;
+            state.inc.Z = Z;
+            updateIncrementalUI();
+            drawIncrementalDisk();
+            drawIncrementalScope();
+        }
+
+        function setQuadMode(mode) {
+            state.inc.quadMode = mode;
+            [1, 2, 4].forEach(m => {
+                const btn = document.getElementById(`quad-x${m}`);
+                if (m === mode) {
+                    btn.className = 'py-1 text-xs font-mono font-bold rounded transition bg-white text-eafit-navy shadow-sm';
+                } else {
+                    btn.className = 'py-1 text-xs font-mono font-bold rounded transition text-slate-600 hover:text-slate-900';
+                }
+            });
+            document.getElementById('osc-mode-text').textContent = `X${mode}`;
+            updateIncrementalUI();
+            drawIncrementalScope();
+        }
+
+        function resetIncrementalCounter() {
+            state.inc.counts = 0;
+            state.inc.totalAngle = state.inc.angle;
+            updateIncrementalUI();
+        }
+
+        function clearOscilloscope() {
+            state.inc.history = [];
+            drawIncrementalScope();
+        }
+
+        function updateIncrementalUI() {
+            const { angle, A, B, Z, counts, ppr, quadMode, direction } = state.inc;
+            
+            document.getElementById('inc-angle-label').textContent = `${angle.toFixed(1)}°`;
+            document.getElementById('inc-angle-slider').value = angle;
+
+            // LEDs y estados lógicos
+            document.getElementById('state-a-val').textContent = A ? '1 (5V)' : '0 (0V)';
+            document.getElementById('led-a').className = A
+                ? 'w-4 h-4 rounded-full bg-cyan-400 border border-cyan-600 led-glow-cyan transition-all'
+                : 'w-4 h-4 rounded-full bg-slate-300 border border-slate-400 transition-all';
+
+            document.getElementById('state-b-val').textContent = B ? '1 (5V)' : '0 (0V)';
+            document.getElementById('led-b').className = B
+                ? 'w-4 h-4 rounded-full bg-amber-400 border border-amber-600 led-glow-amber transition-all'
+                : 'w-4 h-4 rounded-full bg-slate-300 border border-slate-400 transition-all';
+
+            document.getElementById('state-z-val').textContent = Z ? '1 (5V)' : '0 (0V)';
+            document.getElementById('led-z').className = Z
+                ? 'w-4 h-4 rounded-full bg-emerald-400 border border-emerald-600 led-glow-emerald transition-all'
+                : 'w-4 h-4 rounded-full bg-slate-300 border border-slate-400 transition-all';
+
+            document.getElementById('quad-state-word').textContent = `${A}${B}`;
+
+            // Sentido de giro
+            const dirEl = document.getElementById('inc-dir-display');
+            if (direction === 1) {
+                dirEl.innerHTML = '<i class="fa-solid fa-rotate-right text-cyan-600"></i> <span class="text-cyan-700">CW (Horario)</span>';
+            } else if (direction === -1) {
+                dirEl.innerHTML = '<i class="fa-solid fa-rotate-left text-amber-600"></i> <span class="text-amber-700">CCW (Antihorario)</span>';
+            } else {
+                dirEl.innerHTML = '<i class="fa-solid fa-minus text-slate-400"></i> <span>Sin movimiento</span>';
+            }
+
+            // Cálculos de posición y resolución
+            const cpr = ppr * quadMode;
+            const resDeg = 360 / cpr;
+            const measAngle = (counts / cpr) * 360;
+
+            document.getElementById('inc-counts-display').textContent = counts;
+            document.getElementById('inc-meas-angle-display').textContent = `${measAngle.toFixed(2)}°`;
+            document.getElementById('inc-res-display').textContent = `${resDeg.toFixed(2)}° / cuenta`;
+            document.getElementById('inc-cpr-display').textContent = `${cpr} CPR efectivas`;
+            document.getElementById('inc-formula-live').textContent = `= (${counts} / (${ppr} × ${quadMode})) × 360° = ${measAngle.toFixed(2)}°`;
+        }
+
+        /**
+         * Dibuja el disco ranurado incremental y sus 3 sensores ópticos en Canvas
+         */
+        function drawIncrementalDisk() {
+            const canvas = document.getElementById('incDiskCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.width / dpr;
+            const h = canvas.height / dpr;
+            const cx = w / 2;
+            const cy = h / 2;
+            const maxR = Math.min(cx, cy) - 18;
+
+            ctx.save();
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, w, h);
+
+            const { angle, ppr, A, B, Z } = state.inc;
+            const rotRad = (angle * Math.PI) / 180;
+
+            // 1. Sustrato metálico / vidrio del disco giratorio
+            ctx.save();
+            ctx.translate(cx, cy);
+            ctx.rotate(rotRad);
+
+            // Disco base oscuro
+            ctx.beginPath();
+            ctx.arc(0, 0, maxR, 0, Math.PI * 2);
+            ctx.fillStyle = '#1e293b';
+            ctx.fill();
+            ctx.lineWidth = 3;
+            ctx.strokeStyle = '#475569';
+            ctx.stroke();
+
+            // Pista exterior de ranuras ópticas (para A y B)
+            const outerSlotR1 = maxR * 0.66;
+            const outerSlotR2 = maxR * 0.90;
+            const pitchRad = (Math.PI * 2) / ppr;
+
+            for (let i = 0; i < ppr; i++) {
+                const startA = i * pitchRad;
+                const endA = startA + pitchRad * 0.5;
+                ctx.beginPath();
+                ctx.arc(0, 0, outerSlotR2, startA, endA);
+                ctx.arc(0, 0, outerSlotR1, endA, startA, true);
+                ctx.closePath();
+                ctx.fillStyle = '#e2e8f0'; // Ranura transparente iluminada
+                ctx.fill();
+            }
+
+            // Pista interior de índice Z (1 sola ranura en 0°)
+            const innerSlotR1 = maxR * 0.42;
+            const innerSlotR2 = maxR * 0.56;
+            const zSpan = Math.min(pitchRad * 0.35, (8 * Math.PI) / 180);
+            ctx.beginPath();
+            ctx.arc(0, 0, innerSlotR2, 0, zSpan);
+            ctx.arc(0, 0, innerSlotR1, zSpan, 0, true);
+            ctx.closePath();
+            ctx.fillStyle = '#10b981';
+            ctx.fill();
+
+            // Marca de referencia mecánica 0° en el disco
+            ctx.beginPath();
+            ctx.moveTo(maxR * 0.22, 0);
+            ctx.lineTo(maxR * 0.38, 0);
+            ctx.strokeStyle = '#FDB913';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+
+            // Eje central metálico (Hub)
+            ctx.beginPath();
+            ctx.arc(0, 0, maxR * 0.22, 0, Math.PI * 2);
+            ctx.fillStyle = '#94a3b8';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#cbd5e1';
+            ctx.stroke();
+
+            // Chavetero en el eje
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(maxR * 0.12, -3, maxR * 0.1, 6);
+
+            ctx.restore();
+
+            // 2. Cabezal lector óptico fijo (Sensores A, B, Z ubicados en la parte derecha 0°)
+            // Sensor A en ángulo 0 rad, radio medio outerSlot
+            const sensorR_AB = maxR * 0.78;
+            const sensorR_Z = maxR * 0.49;
+            // Desfase angular físico equivalente a 90° eléctricos (1/4 de pitch)
+            const angleSensorA = 0;
+            const angleSensorB = -pitchRad * 0.25; // Atrasado 90° eléctricos en sentido CW
+
+            // Carcasa semitransparente del cabezal óptico
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(cx, cy, maxR * 0.96, -pitchRad * 0.45 - 0.14, 0.16);
+            ctx.arc(cx, cy, maxR * 0.38, 0.16, -pitchRad * 0.45 - 0.14, true);
+            ctx.closePath();
+            ctx.fillStyle = 'rgba(0, 40, 85, 0.45)';
+            ctx.fill();
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
+            ctx.stroke();
+            ctx.restore();
+
+            // Dibujar Sensor A
+            drawOpticalHeadDot(ctx, cx + sensorR_AB * Math.cos(angleSensorA), cy + sensorR_AB * Math.sin(angleSensorA), A ? '#06b6d4' : '#334155', '#06b6d4', 'A');
+            // Dibujar Sensor B
+            drawOpticalHeadDot(ctx, cx + sensorR_AB * Math.cos(angleSensorB), cy + sensorR_AB * Math.sin(angleSensorB), B ? '#f59e0b' : '#334155', '#f59e0b', 'B');
+            // Dibujar Sensor Z
+            drawOpticalHeadDot(ctx, cx + sensorR_Z, cy, Z ? '#10b981' : '#334155', '#10b981', 'Z');
+
+            ctx.restore();
+        }
+
+        function drawOpticalHeadDot(ctx, x, y, fill, stroke, label) {
+            ctx.beginPath();
+            ctx.arc(x, y, 8, 0, Math.PI * 2);
+            ctx.fillStyle = fill;
+            ctx.fill();
+            ctx.lineWidth = 2.5;
+            ctx.strokeStyle = stroke;
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px JetBrains Mono, monospace';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(label, x, y);
+        }
+
+        /**
+         * Dibuja el osciloscopio digital sincronizado de canales A, B y Z
+         */
+        function drawIncrementalScope() {
+            const canvas = document.getElementById('incScopeCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.width / dpr;
+            const h = canvas.height / dpr;
+
+            ctx.save();
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, w, h);
+
+            // Cuadrícula de osciloscopio
+            ctx.strokeStyle = '#1e293b';
+            ctx.lineWidth = 1;
+            const gridCols = 12;
+            const gridRows = 6;
+            for (let c = 1; c < gridCols; c++) {
+                const x = (w / gridCols) * c;
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, h);
+                ctx.stroke();
+            }
+            for (let r = 1; r < gridRows; r++) {
+                const y = (h / gridRows) * r;
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(w, y);
+                ctx.stroke();
+            }
+
+            const channels = [
+                { key: 'A', label: 'CH A (5V)', color: '#06b6d4', yLow: h * 0.28, yHigh: h * 0.08 },
+                { key: 'B', label: 'CH B (5V)', color: '#f59e0b', yLow: h * 0.60, yHigh: h * 0.40 },
+                { key: 'Z', label: 'CH Z (5V)', color: '#10b981', yLow: h * 0.92, yHigh: h * 0.72 }
+            ];
+
+            const hist = state.inc.history;
+            const leftMargin = 68;
+            const plotW = w - leftMargin - 14;
+
+            channels.forEach(ch => {
+                // Etiqueta del canal
+                ctx.fillStyle = ch.color;
+                ctx.font = 'bold 11px JetBrains Mono, monospace';
+                ctx.textAlign = 'left';
+                ctx.fillText(ch.label, 8, (ch.yLow + ch.yHigh) / 2 + 4);
+
+                // Línea base 0V tenue
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+                ctx.setLineDash([3, 3]);
+                ctx.beginPath();
+                ctx.moveTo(leftMargin, ch.yLow);
+                ctx.lineTo(w - 14, ch.yLow);
+                ctx.stroke();
+                ctx.setLineDash([]);
+
+                if (hist.length < 2) {
+                    // Línea plana en el estado actual si aún no hay historial
+                    const val = state.inc[ch.key];
+                    const y = val ? ch.yHigh : ch.yLow;
+                    ctx.strokeStyle = ch.color;
+                    ctx.lineWidth = 2.5;
+                    ctx.beginPath();
+                    ctx.moveTo(leftMargin, y);
+                    ctx.lineTo(w - 14, y);
+                    ctx.stroke();
+                    return;
+                }
+
+                // Trazar onda cuadrada digital
+                ctx.strokeStyle = ch.color;
+                ctx.lineWidth = 2.5;
+                ctx.beginPath();
+
+                const stepX = plotW / 180;
+                for (let i = 0; i < hist.length; i++) {
+                    const x = leftMargin + i * stepX;
+                    const val = hist[i][ch.key];
+                    const y = val ? ch.yHigh : ch.yLow;
+
+                    if (i === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        const prevVal = hist[i - 1][ch.key];
+                        const prevY = prevVal ? ch.yHigh : ch.yLow;
+                        if (prevVal !== val) {
+                            ctx.lineTo(x, prevY);
+                            ctx.lineTo(x, y);
+                        } else {
+                            ctx.lineTo(x, y);
+                        }
+                    }
+                }
+                ctx.stroke();
+
+                // Marcar flancos activos que dispararon cuenta según modo X1/X2/X4
+                for (let i = 1; i < hist.length; i++) {
+                    const item = hist[i];
+                    if (item.counted !== 0) {
+                        const x = leftMargin + i * stepX;
+                        const isEdgeOnThisChannel =
+                            (ch.key === 'A' && item.edgeA !== 0) ||
+                            (ch.key === 'B' && item.edgeB !== 0);
+
+                        if (isEdgeOnThisChannel) {
+                            const yMid = (ch.yLow + ch.yHigh) / 2;
+                            ctx.beginPath();
+                            ctx.arc(x, yMid, 4.5, 0, Math.PI * 2);
+                            ctx.fillStyle = '#ffffff';
+                            ctx.fill();
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = ch.color;
+                            ctx.stroke();
+                        }
+                    }
+                }
+            });
+
+            ctx.restore();
+        }
+
+        // =========================================================================
+        // MÓDULO 2: ENCODER ABSOLUTO (BINARIO NATURAL VS. CÓDIGO GRAY)
+        // =========================================================================
+
+        function binaryToGray(num) {
+            return num ^ (num >> 1);
+        }
+
+        function grayToBinary(gray) {
+            let num = gray;
+            for (let shift = 1; shift < 16; shift <<= 1) {
+                num ^= (num >> shift);
+            }
+            return num;
+        }
+
+        function countDiffBits(a, b) {
+            let xor = a ^ b;
+            let count = 0;
+            while (xor > 0) {
+                count += xor & 1;
+                xor >>= 1;
+            }
+            return count;
+        }
+
+        function setAbsoluteBits(n) {
+            state.abs.bits = n;
+            [3, 4, 5].forEach(b => {
+                const btn = document.getElementById(`abs-bit-${b}`);
+                if (b === n) {
+                    btn.className = 'px-2.5 py-1 text-xs font-mono font-bold rounded bg-eafit-navy text-white border border-eafit-navy';
+                } else {
+                    btn.className = 'px-2.5 py-1 text-xs font-mono font-bold rounded bg-slate-100 text-slate-700 border border-slate-300';
+                }
+            });
+            document.getElementById('abs-sectors-title').textContent = `${Math.pow(2, n)} Sectores`;
+            updateAbsoluteSimulation();
+        }
+
+        function setAbsoluteEncoding(type) {
+            state.abs.encoding = type;
+            const btnBin = document.getElementById('enc-type-binary');
+            const btnGray = document.getElementById('enc-type-gray');
+            if (type === 'binary') {
+                btnBin.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 bg-white text-rose-700 shadow-sm';
+                btnGray.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900';
+                document.getElementById('abs-word-type-label').textContent = 'Binario';
+            } else {
+                btnGray.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 bg-white text-eafit-navy shadow-sm';
+                btnBin.className = 'py-2 px-3 rounded-lg text-xs sm:text-sm font-bold transition flex items-center justify-center gap-2 text-slate-600 hover:text-slate-900';
+                document.getElementById('abs-word-type-label').textContent = 'Gray';
+            }
+            updateAbsoluteSimulation();
+        }
+
+        function stepAbsoluteAngle(delta) {
+            state.abs.angle = (((state.abs.angle + delta) % 360) + 360) % 360;
+            updateAbsoluteSimulation();
+        }
+
+        /**
+         * Posiciona el disco exactamente en la frontera de mayor cambio de bits (ej. 180.0°)
+         */
+        function jumpToCriticalTransition() {
+            // A 180.0° ocurre la transición de la mitad del disco (ej. 7 -> 8 en 4 bits: 0111 -> 1000)
+            state.abs.angle = 179.8;
+            state.abs.misalign = true;
+            document.getElementById('abs-misalign-toggle').checked = true;
+            updateAbsoluteSimulation();
+        }
+
+        function updateAbsoluteSimulation() {
+            state.abs.misalign = document.getElementById('abs-misalign-toggle').checked;
+            const { bits, encoding, angle, misalign } = state.abs;
+            const numSectors = Math.pow(2, bits);
+            const sectorWidth = 360 / numSectors;
+
+            document.getElementById('abs-angle-label').textContent = `${angle.toFixed(1)}°`;
+            document.getElementById('abs-angle-slider').value = angle;
+
+            // Sector real ideal (sin desalineación)
+            const expectedSector = Math.floor(angle / sectorWidth) % numSectors;
+
+            // Leer cada pista radial (desde MSB = bits-1 hasta LSB = 0)
+            const readBits = [];
+            for (let b = bits - 1; b >= 0; b--) {
+                const trackIdx = (bits - 1) - b; // 0 para pista interna MSB
+                const offset = misalign ? MISALIGNMENT_OFFSETS[trackIdx] : 0;
+                const effAngle = (((angle + offset) % 360) + 360) % 360;
+                const sectorAtSensor = Math.floor(effAngle / sectorWidth) % numSectors;
+                const codeWord = (encoding === 'gray') ? binaryToGray(sectorAtSensor) : sectorAtSensor;
+                const bitVal = (codeWord >> b) & 1;
+                readBits.push(bitVal);
+            }
+
+            // Reconstruir palabra leída y decodificar sector
+            let rawWordVal = 0;
+            readBits.forEach(bit => {
+                rawWordVal = (rawWordVal << 1) | bit;
+            });
+
+            const decodedSector = (encoding === 'gray') ? grayToBinary(rawWordVal) : rawWordVal;
+            const rawWordStr = readBits.join('');
+
+            // Actualizar banco visual de fotodetectores
+            const bankEl = document.getElementById('abs-sensors-bank');
+            bankEl.className = `grid grid-cols-${bits} gap-2.5 mb-4`;
+            bankEl.innerHTML = readBits.map((bitVal, idx) => {
+                const bitPower = bits - 1 - idx;
+                const role = idx === 0 ? 'MSB' : (idx === bits - 1 ? 'LSB' : `Bit ${bitPower}`);
+                const activeClass = bitVal
+                    ? 'bg-amber-50 border-amber-400 text-amber-900'
+                    : 'bg-slate-50 border-slate-200 text-slate-500';
+                const dotClass = bitVal
+                    ? 'w-3.5 h-3.5 rounded-full bg-amber-400 led-glow-amber mx-auto my-1.5'
+                    : 'w-3.5 h-3.5 rounded-full bg-slate-300 mx-auto my-1.5';
+                return `
+                    <div class="border rounded-xl p-2.5 text-center transition ${activeClass}">
+                        <div class="text-[10px] font-bold uppercase tracking-wider">${role}</div>
+                        <div class="${dotClass}"></div>
+                        <div class="text-lg font-mono font-extrabold">${bitVal}</div>
+                    </div>
+                `;
+            }).join('');
+
+            document.getElementById('abs-raw-word').textContent = rawWordStr;
+            document.getElementById('abs-decoded-sector').textContent = decodedSector;
+            document.getElementById('abs-expected-sector').textContent = `(Sector real: ${expectedSector})`;
+
+            // Cálculo angular y error
+            const measuredAngle = (decodedSector + 0.5) * sectorWidth;
+            let angularError = Math.abs(angle - measuredAngle);
+            if (angularError > 180) angularError = 360 - angularError;
+
+            document.getElementById('abs-real-deg').textContent = `${angle.toFixed(1)}°`;
+            document.getElementById('abs-meas-deg').textContent = `${measuredAngle.toFixed(1)}°`;
+            document.getElementById('abs-error-deg').textContent = `${angularError.toFixed(1)}°`;
+
+            // Evaluar si existe un glitch grave (> 1 sector de diferencia)
+            let sectorDiff = Math.abs(decodedSector - expectedSector);
+            if (sectorDiff > numSectors / 2) sectorDiff = numSectors - sectorDiff;
+
+            const alertBox = document.getElementById('abs-glitch-alert');
+            const alertIcon = document.getElementById('abs-glitch-icon');
+            const alertTitle = document.getElementById('abs-glitch-title');
+            const alertDesc = document.getElementById('abs-glitch-desc');
+            const errText = document.getElementById('abs-error-deg');
+
+            if (sectorDiff > 1) {
+                alertBox.className = 'mt-4 p-3.5 rounded-xl border transition-all bg-rose-50 border-rose-300 text-rose-900';
+                alertIcon.className = 'fa-solid fa-triangle-exclamation text-rose-600 text-base mt-0.5';
+                alertTitle.textContent = `¡GLITCH DE TRANSICIÓN DETECTADO! (Salto espurio de ${sectorDiff} sectores)`;
+                alertDesc.innerHTML = `Debido a la desalineación entre sensores y el cambio simultáneo de múltiples bits en <strong>Binario Natural</strong>, el sistema leyó el sector <strong>${decodedSector}</strong> (${measuredAngle.toFixed(1)}°) en lugar del sector <strong>${expectedSector}</strong>. En un servomecanismo real esto causaría un golpe mecánico violento.`;
+                errText.className = 'text-base font-mono font-bold text-rose-600';
+            } else {
+                alertBox.className = 'mt-4 p-3.5 rounded-xl border transition-all bg-emerald-50 border-emerald-200 text-emerald-900';
+                alertIcon.className = 'fa-solid fa-circle-check text-emerald-600 text-base mt-0.5';
+                alertTitle.textContent = sectorDiff === 1
+                    ? 'Transición Adyacente Segura (Incertidumbre Normal de ±1 LSB)'
+                    : 'Lectura Válida y Libre de Ambigüedad';
+                alertDesc.textContent = encoding === 'gray'
+                    ? 'Incluso con desalineación óptica entre pistas, el Código Gray cambia únicamente 1 bit por frontera, garantizando que nunca aparezcan estados intermedios espurios.'
+                    : 'Posición estable dentro del sector. Prueba acercar el ángulo a 180.0° con la desalineación activa para observar el fallo del código binario.';
+                errText.className = 'text-base font-mono font-bold text-emerald-600';
+            }
+
+            renderAbsoluteTruthTable(expectedSector, numSectors, bits);
+            drawAbsoluteDisk();
+        }
+
+        function renderAbsoluteTruthTable(currentSector, numSectors, bits) {
+            const tbody = document.getElementById('abs-truth-table-body');
+            const sectorWidth = 360 / numSectors;
+            const rows = [];
+
+            for (let offset = -2; offset <= 2; offset++) {
+                const s = (currentSector + offset + numSectors) % numSectors;
+                const prevS = (s - 1 + numSectors) % numSectors;
+                const binStr = s.toString(2).padStart(bits, '0');
+                const grayVal = binaryToGray(s);
+                const grayStr = grayVal.toString(2).padStart(bits, '0');
+
+                const binChanges = countDiffBits(s, prevS);
+                const grayChanges = countDiffBits(grayVal, binaryToGray(prevS));
+
+                const isCurrent = (offset === 0);
+                const rowClass = isCurrent ? 'bg-amber-50/90 font-bold text-eafit-navy' : 'text-slate-700';
+                const changeBadge = binChanges > 1
+                    ? `<span class="text-rose-600 font-bold">${binChanges} bits</span> / <span class="text-emerald-600 font-bold">${grayChanges} bit</span>`
+                    : `<span class="text-slate-500">${binChanges} bit</span> / <span class="text-emerald-600">${grayChanges} bit</span>`;
+
+                rows.push(`
+                    <tr class="${rowClass}">
+                        <td class="py-1.5 px-2.5">${s} ${isCurrent ? '◀' : ''}</td>
+                        <td class="py-1.5 px-2.5">${(s * sectorWidth).toFixed(1)}°–${((s + 1) * sectorWidth).toFixed(1)}°</td>
+                        <td class="py-1.5 px-2.5">${binStr}</td>
+                        <td class="py-1.5 px-2.5">${grayStr}</td>
+                        <td class="py-1.5 px-2.5">${changeBadge}</td>
+                    </tr>
+                `);
+            }
+            tbody.innerHTML = rows.join('');
+        }
+
+        /**
+         * Dibuja el disco concéntrico absoluto y la barra radial de sensores
+         */
+        function drawAbsoluteDisk() {
+            const canvas = document.getElementById('absDiskCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+            const w = canvas.width / dpr;
+            const h = canvas.height / dpr;
+            const cx = w / 2;
+            const cy = h / 2;
+            const maxR = Math.min(cx, cy) - 18;
+
+            ctx.save();
+            ctx.scale(dpr, dpr);
+            ctx.clearRect(0, 0, w, h);
+
+            const { bits, encoding, angle, misalign } = state.abs;
+            const numSectors = Math.pow(2, bits);
+            const sectorRad = (Math.PI * 2) / numSectors;
+            const rotRad = (angle * Math.PI) / 180;
+
+            const innerHubR = maxR * 0.24;
+            const trackWidth = (maxR - innerHubR) / bits;
+
+            // Dibujar pistas concéntricas giradas según el ángulo del eje
+            ctx.save();
+            ctx.translate(cx, cy);
+            // Rotamos en sentido antihorario para que el ángulo leído en el sensor fijo (derecha, 0 rad) corresponda a `angle`
+            ctx.rotate(-rotRad);
+
+            for (let t = 0; t < bits; t++) {
+                const bitPos = bits - 1 - t; // t=0 es pista interna (MSB)
+                const r1 = innerHubR + t * trackWidth;
+                const r2 = r1 + trackWidth;
+
+                for (let s = 0; s < numSectors; s++) {
+                    const codeVal = (encoding === 'gray') ? binaryToGray(s) : s;
+                    const isOne = ((codeVal >> bitPos) & 1) === 1;
+
+                    const a1 = s * sectorRad;
+                    const a2 = a1 + sectorRad;
+
+                    ctx.beginPath();
+                    ctx.arc(0, 0, r2, a1, a2);
+                    ctx.arc(0, 0, r1, a2, a1, true);
+                    ctx.closePath();
+
+                    ctx.fillStyle = isOne ? '#f8fafc' : '#1e293b';
+                    ctx.fill();
+                    ctx.lineWidth = 0.7;
+                    ctx.strokeStyle = '#475569';
+                    ctx.stroke();
+                }
+            }
+
+            // Eje central
+            ctx.beginPath();
+            ctx.arc(0, 0, innerHubR, 0, Math.PI * 2);
+            ctx.fillStyle = '#002855';
+            ctx.fill();
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = '#FDB913';
+            ctx.stroke();
+
+            // Línea de 0° en el disco
+            ctx.beginPath();
+            ctx.moveTo(innerHubR * 0.4, 0);
+            ctx.lineTo(maxR, 0);
+            ctx.strokeStyle = 'rgba(253, 185, 19, 0.75)';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            ctx.restore();
+
+            // Dibujar barra fija de sensores ópticos radiales (a la derecha, 0 rad)
+            ctx.save();
+            ctx.fillStyle = 'rgba(0, 40, 85, 0.75)';
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.roundRect(cx + innerHubR - 4, cy - 14, maxR - innerHubR + 10, 28, 6);
+            ctx.fill();
+            ctx.stroke();
+
+            for (let t = 0; t < bits; t++) {
+                const bitPos = bits - 1 - t;
+                const rMid = innerHubR + (t + 0.5) * trackWidth;
+                const offsetDeg = misalign ? MISALIGNMENT_OFFSETS[t] : 0;
+                const offsetRad = (-offsetDeg * Math.PI) / 180;
+
+                const sx = cx + rMid * Math.cos(offsetRad);
+                const sy = cy + rMid * Math.sin(offsetRad);
+
+                // Evaluar si el sensor está viendo un 1 o 0
+                const effAngle = (((angle + offsetDeg) % 360) + 360) % 360;
+                const sec = Math.floor(effAngle / (360 / numSectors)) % numSectors;
+                const code = (encoding === 'gray') ? binaryToGray(sec) : sec;
+                const isOne = ((code >> bitPos) & 1) === 1;
+
+                ctx.beginPath();
+                ctx.arc(sx, sy, Math.min(7, trackWidth * 0.32), 0, Math.PI * 2);
+                ctx.fillStyle = isOne ? '#f59e0b' : '#334155';
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = isOne ? '#fef08a' : '#94a3b8';
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            ctx.restore();
+        }
+
+        // =========================================================================
+        // MÓDULO 3: CALCULADORA DE INGENIERÍA (DAQ / PLC)
+        // =========================================================================
+        function setCalcPPR(val) {
+            document.getElementById('calc-ppr').value = val;
+            calculateEngineeringSpecs();
+        }
+
+        function calculateEngineeringSpecs() {
+            const ppr = Math.max(1, parseFloat(document.getElementById('calc-ppr').value) || 1024);
+            const rpm = Math.max(0, parseFloat(document.getElementById('calc-rpm').value) || 0);
+            const quad = parseInt(document.getElementById('calc-quad').value, 10) || 4;
+            const daqKhz = Math.max(0.1, parseFloat(document.getElementById('calc-daq-khz').value) || 100);
+
+            const cpr = ppr * quad;
+            const eqBits = Math.log2(cpr);
+            const resDeg = 360 / cpr;
+            const resArcmin = resDeg * 60;
+            const resArcsec = resArcmin * 60;
+
+            const freqChannelHz = (rpm * ppr) / 60;
+            const freqChannelKhz = freqChannelHz / 1000;
+            const freqCountKhz = freqChannelKhz * quad;
+
+            document.getElementById('res-calc-cpr').textContent = `${cpr.toLocaleString('es-CO')} CPR`;
+            document.getElementById('res-calc-bits').textContent = eqBits.toFixed(2);
+            document.getElementById('res-calc-deg').textContent = `${resDeg.toFixed(4)}°`;
+            document.getElementById('res-calc-arcmin').textContent = `${resArcmin.toFixed(2)} arcmin (${resArcsec.toFixed(1)} arcsec)`;
+            document.getElementById('res-calc-fchan').textContent = `${freqChannelKhz.toFixed(2)} kHz`;
+            document.getElementById('res-calc-fcount').textContent = `${freqCountKhz.toFixed(2)} kHz`;
+
+            const box = document.getElementById('calc-verdict-box');
+            const icon = document.getElementById('calc-verdict-icon');
+            const title = document.getElementById('calc-verdict-title');
+            const text = document.getElementById('calc-verdict-text');
+
+            if (freqCountKhz > daqKhz) {
+                box.className = 'p-4 rounded-xl border bg-rose-50 border-rose-300 text-rose-900';
+                icon.className = 'fa-solid fa-triangle-exclamation text-rose-600 text-lg mt-0.5';
+                title.textContent = '¡Alerta de Saturación en el Contador (Pérdida de Pulsos)!';
+                text.innerHTML = `La tasa de conteo calculada (<strong>${freqCountKhz.toFixed(2)} kHz</strong>) supera el límite de entrada del PLC/DAQ (<strong>${daqKhz} kHz</strong>). A ${rpm} RPM el sistema perderá cuentas y acumulará error de posición. Solución: reduce los PPR, baja el modo de cuadratura o usa un módulo HSC de mayor ancho de banda.`;
+            } else if (freqCountKhz > daqKhz * 0.8) {
+                box.className = 'p-4 rounded-xl border bg-amber-50 border-amber-300 text-amber-900';
+                icon.className = 'fa-solid fa-circle-exclamation text-amber-600 text-lg mt-0.5';
+                title.textContent = 'Operación Cerca del Límite (>80% Capacidad DAQ)';
+                text.innerHTML = `La frecuencia de conteo (<strong>${freqCountKhz.toFixed(2)} kHz</strong>) es soportada por la tarjeta (${daqKhz} kHz), pero tiene poco margen de seguridad ante sobrevelocidades transitorias o ruido eléctrico. Asegúrate de usar cable apantallado diferencial RS-422.`;
+            } else {
+                box.className = 'p-4 rounded-xl border bg-emerald-50 border-emerald-300 text-emerald-900';
+                icon.className = 'fa-solid fa-circle-check text-emerald-600 text-lg mt-0.5';
+                title.textContent = 'Dimensionamiento Óptimo y Seguro';
+                text.innerHTML = `La tarjeta de adquisición (${daqKhz} kHz) captura cómodamente la tasa de ${freqCountKhz.toFixed(2)} kHz con un margen de seguridad del ${((1 - freqCountKhz / daqKhz) * 100).toFixed(0)}%.`;
+            }
+        }
+
+        // =========================================================================
+        // MÓDULO 4: RETOS DE LABORATORIO INTERACTIVOS
+        // =========================================================================
+        const LAB_CHALLENGES = [
+            {
+                id: 0,
+                title: 'Reto 1: Detección de Sentido de Giro en Cuadratura',
+                context: 'Observa el diagrama de tiempos del Módulo 1 al girar el disco en sentido antihorario (CCW, RPM negativas).',
+                question: '¿Qué relación de fase eléctrica existe entre el Canal A y el Canal B cuando el eje gira en sentido antihorario (CCW)?',
+                options: [
+                    'El Canal A adelanta 90° eléctricos al Canal B.',
+                    'El Canal B adelanta 90° eléctricos al Canal A.',
+                    'Ambos canales A y B entran en fase (0° de desfase).',
+                    'El Canal Z duplica su frecuencia de pulsos.'
+                ],
+                correctIndex: 1,
+                explanation: 'Correcto. El desfase geométrico de 1/4 de paso entre los fotodetectores hace que en giro horario (CW) A adelante a B, mientras que al invertir el giro (CCW), B adelanta 90° eléctricos a A.'
+            },
+            {
+                id: 1,
+                title: 'Reto 2: Multiplicación de Resolución en Cuadratura (X4)',
+                context: 'Un servomotor de un torno CNC acopla un encoder incremental de 24 PPR configurado en modo de decodificación X4.',
+                question: '¿Cuántas cuentas por revolución (CPR) registra el controlador y cuál es su resolución angular Δθ?',
+                options: [
+                    '24 CPR y Δθ = 15.00°',
+                    '48 CPR y Δθ = 7.50°',
+                    '96 CPR y Δθ = 3.75°',
+                    '192 CPR y Δθ = 1.875°'
+                ],
+                correctIndex: 2,
+                explanation: '¡Exacto! En decodificación X4 se cuentan tanto los flancos de subida como de bajada de los canales A y B: CPR = 24 × 4 = 96 cuentas/rev, lo que mejora la resolución a 360° / 96 = 3.75°.'
+            },
+            {
+                id: 2,
+                title: 'Reto 3: Diagnóstico de Falla de Cableado en Planta',
+                context: 'En una línea de empaque, el cable del Canal B de un encoder incremental se rompe (queda desconectado en 0V fijo), pero el Canal A sigue funcionando.',
+                question: '¿Qué comportamiento observará el operador en el PLC cuando la máquina gire en ambos sentidos?',
+                options: [
+                    'El encoder seguirá midiendo correctamente la posición pero con la mitad de resolución.',
+                    'El PLC contará pulsos pero interpretará siempre el mismo sentido de giro (no detectará inversión de giro).',
+                    'El Canal Z asumirá automáticamente la función del Canal B.',
+                    'El contador permanecerá congelado en cero sin importar el modo.'
+                ],
+                correctIndex: 1,
+                explanation: 'Muy bien diagnosticado. Sin el Canal B (fijo en 0), cada flanco de subida de A siempre verá B=0, por lo que el decodificador creerá que el eje gira siempre en sentido CW incluso cuando retrocede.'
+            },
+            {
+                id: 3,
+                title: 'Reto 4: Falla Crítica en Encoder Absoluto Binario Natural',
+                context: 'En el Módulo 2, selecciona 4 bits, codificación Binario Natural, activa la Desalineación Óptica y ubica el eje en la frontera 179.8° (transición sector 7 → 8).',
+                question: '¿Por qué en Binario Natural la transición del sector 7 (0111) al sector 8 (1000) es la más crítica del disco?',
+                options: [
+                    'Porque los 4 bits deben cambiar de estado simultáneamente; cualquier micro-desfase entre sensores genera palabras espurias como 1111 (sector 15).',
+                    'Porque el fotodetector del bit menos significativo (LSB) se apaga por sobrecalentamiento.',
+                    'Porque en 180° se activa el pulso índice Z.',
+                    'Porque la resolución del disco disminuye a la mitad en el segundo cuadrante.'
+                ],
+                correctIndex: 0,
+                explanation: 'Excelente análisis. En Binario Natural, pasar de 7 (0111) a 8 (1000) implica conmutar 4 bits a la vez. Si el MSB cambia antes que los demás, el PLC lee 1111 (15), provocando un error instantáneo de casi 180°.'
+            },
+            {
+                id: 4,
+                title: 'Reto 5: Selección de Sensor para Articulación de Robot Industrial',
+                context: 'Debes instrumentar la articulación de base de un brazo robótico pesado que no puede realizar movimientos libres de búsqueda de cero (homing) al encenderse tras un corte de energía por riesgo de colisión.',
+                question: '¿Cuál arquitectura de encoder es la adecuada según la matriz técnica del Módulo 3?',
+                options: [
+                    'Encoder incremental TTL de 5V sin canal Z.',
+                    'Encoder incremental HTL en modo de decodificación X1.',
+                    'Encoder absoluto (monovuelta o multivuelta según reducción) con interfaz serie BiSS-C o PROFINET.',
+                    'Tacogenerador analógico de corriente continua.'
+                ],
+                correctIndex: 2,
+                explanation: 'Correcto. Un encoder absoluto retiene la posición mecánica exacta sin alimentación eléctrica, eliminando la necesidad de rutinas de homing al energizar el robot.'
+            }
+        ];
+
+        function renderLabChallenges() {
+            const container = document.getElementById('lab-challenges-container');
+            container.innerHTML = LAB_CHALLENGES.map((ch, idx) => {
+                const isSolved = state.lab.solved[idx];
+                return `
+                    <div id="challenge-card-${idx}" class="bg-white rounded-xl shadow-sm border ${isSolved ? 'border-emerald-400' : 'border-slate-200'} p-5 transition">
+                        <div class="flex items-start justify-between gap-3">
+                            <div>
+                                <span class="inline-block px-2.5 py-0.5 text-[11px] font-bold rounded-full ${isSolved ? 'bg-emerald-100 text-emerald-800' : 'bg-blue-50 text-eafit-navy'} mb-1.5">
+                                    ${isSolved ? '✓ Completado' : `Ejercicio ${idx + 1} de 5`}
+                                </span>
+                                <h3 class="text-sm sm:text-base font-bold text-slate-900">${ch.title}</h3>
+                            </div>
+                        </div>
+                        <p class="text-xs sm:text-sm text-slate-600 mt-1.5 bg-slate-50 p-3 rounded-lg border border-slate-200">
+                            <strong>Contexto:</strong> ${ch.context}
+                        </p>
+                        <p class="text-xs sm:text-sm font-semibold text-eafit-navy mt-3 mb-2.5">${ch.question}</p>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+                            ${ch.options.map((opt, oIdx) => `
+                                <button onclick="checkLabAnswer(${idx}, ${oIdx})" id="ch-${idx}-opt-${oIdx}" class="text-left p-3 rounded-lg border border-slate-200 hover:border-eafit-navy hover:bg-blue-50/40 text-xs sm:text-sm text-slate-700 transition flex items-start gap-2.5">
+                                    <span class="font-mono font-bold text-eafit-navy bg-slate-100 px-1.5 py-0.5 rounded">${String.fromCharCode(65 + oIdx)}</span>
+                                    <span>${opt}</span>
+                                </button>
+                            `).join('')}
+                        </div>
+                        <div id="ch-feedback-${idx}" class="hidden mt-3 p-3.5 rounded-lg text-xs sm:text-sm"></div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function checkLabAnswer(challengeIdx, optionIdx) {
+            const challenge = LAB_CHALLENGES[challengeIdx];
+            const feedbackEl = document.getElementById(`ch-feedback-${challengeIdx}`);
+            const isCorrect = (optionIdx === challenge.correctIndex);
+
+            // Resetear estilos de botones del reto
+            challenge.options.forEach((_, oIdx) => {
+                const btn = document.getElementById(`ch-${challengeIdx}-opt-${oIdx}`);
+                btn.className = 'text-left p-3 rounded-lg border border-slate-200 text-xs sm:text-sm text-slate-700 transition flex items-start gap-2.5';
+            });
+
+            const selectedBtn = document.getElementById(`ch-${challengeIdx}-opt-${optionIdx}`);
+            feedbackEl.classList.remove('hidden');
+
+            if (isCorrect) {
+                selectedBtn.className = 'text-left p-3 rounded-lg border-2 border-emerald-500 bg-emerald-50 text-xs sm:text-sm text-emerald-950 font-medium flex items-start gap-2.5';
+                feedbackEl.className = 'mt-3 p-3.5 rounded-lg text-xs sm:text-sm bg-emerald-50 border border-emerald-200 text-emerald-900';
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-check text-emerald-600 mr-1.5"></i> ${challenge.explanation}`;
+                state.lab.solved[challengeIdx] = true;
+                document.getElementById(`challenge-card-${challengeIdx}`).classList.replace('border-slate-200', 'border-emerald-400');
+            } else {
+                selectedBtn.className = 'text-left p-3 rounded-lg border-2 border-rose-500 bg-rose-50 text-xs sm:text-sm text-rose-950 flex items-start gap-2.5';
+                feedbackEl.className = 'mt-3 p-3.5 rounded-lg text-xs sm:text-sm bg-rose-50 border border-rose-200 text-rose-900';
+                feedbackEl.innerHTML = `<i class="fa-solid fa-circle-xmark text-rose-600 mr-1.5"></i> <strong>Respuesta incorrecta.</strong> Revisa el comportamiento en el simulador interactivo e inténtalo de nuevo.`;
+            }
+
+            const solvedCount = state.lab.solved.filter(Boolean).length;
+            document.getElementById('lab-score-badge').textContent = `${solvedCount}/5`;
+            document.getElementById('lab-progress-text').textContent = `${solvedCount} / 5 Completados`;
+        }
+
+        // =========================================================================
+        // INTERACCIÓN DIRECTA CON RATÓN / TÁCTIL SOBRE LOS DISCOS CANVAS
+        // =========================================================================
+        function setupDiskInteraction(canvasId, onAngleDrag) {
+            const canvas = document.getElementById(canvasId);
+            if (!canvas) return;
+
+            let dragging = false;
+            let lastAngle = 0;
+
+            function getPointerAngle(clientX, clientY) {
+                const rect = canvas.getBoundingClientRect();
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                return Math.atan2(clientY - cy, clientX - cx) * (180 / Math.PI);
+            }
+
+            canvas.addEventListener('mousedown', (e) => {
+                dragging = true;
+                lastAngle = getPointerAngle(e.clientX, e.clientY);
+            });
+
+            window.addEventListener('mousemove', (e) => {
+                if (!dragging) return;
+                const current = getPointerAngle(e.clientX, e.clientY);
+                let diff = current - lastAngle;
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+                lastAngle = current;
+                onAngleDrag(diff);
+            });
+
+            window.addEventListener('mouseup', () => {
+                dragging = false;
+            });
+
+            // Soporte táctil móvil/tablet
+            canvas.addEventListener('touchstart', (e) => {
+                if (e.touches.length > 0) {
+                    dragging = true;
+                    lastAngle = getPointerAngle(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: true });
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (!dragging || e.touches.length === 0) return;
+                e.preventDefault();
+                const current = getPointerAngle(e.touches[0].clientX, e.touches[0].clientY);
+                let diff = current - lastAngle;
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+                lastAngle = current;
+                onAngleDrag(diff);
+            }, { passive: false });
+
+            canvas.addEventListener('touchend', () => {
+                dragging = false;
+            });
+        }
+
+        // =========================================================================
+        // REDIMENSIONAMIENTO RESPONSIVO DE CANVAS Y BUCLE DE ANIMACIÓN
+        // =========================================================================
+        function resizeAllCanvases() {
+            const dpr = window.devicePixelRatio || 1;
+            ['incDiskCanvas', 'incScopeCanvas', 'absDiskCanvas'].forEach(id => {
+                const canvas = document.getElementById(id);
+                if (!canvas) return;
+                const rect = canvas.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    canvas.width = rect.width * dpr;
+                    canvas.height = rect.height * dpr;
+                }
+            });
+        }
+
+        let lastFrameTime = performance.now();
+        function animationLoop(now) {
+            const dt = (now - lastFrameTime) / 1000; // segundos
+            lastFrameTime = now;
+
+            // Si el motor del Módulo 1 está girando (RPM != 0), integrar posición angular
+            if (state.inc.rpm !== 0 && dt < 0.2) {
+                const degPerSec = (state.inc.rpm / 60) * 360;
+                setIncrementalAngle(state.inc.totalAngle + degPerSec * dt, true);
+            }
+
+            requestAnimationFrame(animationLoop);
+        }
+
+        // =========================================================================
+        // INICIALIZACIÓN AL CARGAR LA VENTANA
+        // =========================================================================
+        window.onload = function () {
+            resizeAllCanvases();
+
+            // Eventos de controles Módulo 1
+            document.getElementById('inc-angle-slider').addEventListener('input', (e) => {
+                setIncrementalRPM(0);
+                const target = parseFloat(e.target.value);
+                // Calcular camino más corto desde el ángulo actual dentro de la vuelta
+                let diff = target - state.inc.angle;
+                if (diff > 180) diff -= 360;
+                if (diff < -180) diff += 360;
+                setIncrementalAngle(state.inc.totalAngle + diff, true);
+            });
+
+            document.getElementById('inc-rpm-slider').addEventListener('input', (e) => {
+                setIncrementalRPM(e.target.value);
+            });
+
+            // Eventos de controles Módulo 2
+            document.getElementById('abs-angle-slider').addEventListener('input', (e) => {
+                state.abs.angle = parseFloat(e.target.value);
+                updateAbsoluteSimulation();
+            });
+
+            // Interacción directa por arrastre en ambos discos
+            setupDiskInteraction('incDiskCanvas', (deltaDeg) => {
+                setIncrementalRPM(0);
+                setIncrementalAngle(state.inc.totalAngle + deltaDeg, true);
+            });
+
+            setupDiskInteraction('absDiskCanvas', (deltaDeg) => {
+                // El disco absoluto gira visualmente en -rotRad, así que invertimos signo para coincidir con el puntero
+                state.abs.angle = (((state.abs.angle - deltaDeg) % 360) + 360) % 360;
+                updateAbsoluteSimulation();
+            });
+
+            // Inicializar estados iniciales de los 4 módulos
+            updateIncrementalConfig();
+            updateAbsoluteSimulation();
+            calculateEngineeringSpecs();
+            renderLabChallenges();
+
+            window.addEventListener('resize', () => {
+                resizeAllCanvases();
+                drawIncrementalDisk();
+                drawIncrementalScope();
+                drawAbsoluteDisk();
+            });
+
+            // Iniciar bucle de animación continuo
+            requestAnimationFrame(animationLoop);
+        };
+    </script>
+</body>
+</html>
